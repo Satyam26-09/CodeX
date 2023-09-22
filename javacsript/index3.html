@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chatbot</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <!-- Include Axios library -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <div id="chat-window">
+      <div class="main-title">CHAT BOT USING CHAT-GPT</div>
+      <div id="chat-messages"></div>
+      <form id="chat-form">
+        <input
+          type="text"
+          id="chat-input"
+          autocomplete="off"
+          placeholder="Type your message here"
+          required
+        />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+    <script>
+      const form = document.getElementById("chat-form");
+      const input = document.getElementById("chat-input");
+      const messages = document.getElementById("chat-messages");
+      const apiKey = "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"; // Replace with your actual API key
+      let isRequestPending = false;
+      const keywords = ["mining", "rules", "regulations", "India", "coal", "iron ore", "bauxite", "manganese", "copper", "limestone", "dolomite", "mineral exploration", "mining lease", "mining plan", "environment clearance", "forest clearance", "rehabilitation and reclamation"];
+      console.log(input);
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (isRequestPending) {
+          return; // Do not send another request if one is already pending
+        }
+
+        const message = input.value;
+        input.value = "";
+
+      if (keywords.some((keyword) => message.includes(keyword))) {
+
+        messages.innerHTML += `<div class="message user-message">
+          <img src="./icons/user.png" alt="user icon"> <span>${message}</span>
+        </div>`;
+
+        try {
+          // Set a flag to indicate a request is pending
+          isRequestPending = true;
+
+          const response = await axios.post(
+            "https://api.openai.com/v1/engines/text-davinci-003/completions",
+            {
+              prompt: message,
+              max_tokens: 100,
+            },
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+              },
+            }
+          );
+          const chatbotResponse = response.data.choices[0].text;
+
+          messages.innerHTML += `<div class="message bot-message">
+          <img src="./icons/chatbot.png" alt="bot icon"> <span>${chatbotResponse}</span>
+          </div>`;
+        } catch (error) {
+          if (error.response && error.response.status === 429) {
+            console.warn("Rate limit exceeded. Waiting before sending the next request.");
+            // Delay the next request for a few seconds (e.g., 5 seconds)
+            await delay(5000);
+            console.log("Resuming...");
+          } else {
+            console.error("Error making API request:", error);
+            messages.innerHTML += `<div class="message bot-message">
+              <img src="./icons/chatbot.png" alt="bot icon"> <span>Oops! An error occurred.</span>
+            </div>`;
+          }
+        } finally {
+          // Reset the flag when the request is completed
+          isRequestPending = false;
+        }
+      }
+      else {
+              messages.innerHTML += `<div class="message bot-message">
+                <img src="./icons/chatbot.png" alt="bot icon"> <span>Oops! An error occurred.</span>
+              </div>`;
+            }
+      });
+      // Function to delay execution
+      function delay(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+    </script>
+  </body>
+</html>
